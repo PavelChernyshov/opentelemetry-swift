@@ -321,4 +321,20 @@ class ActivityContextManagerTests: XCTestCase {
         XCTAssert(OpenTelemetry.instance.contextProvider.activeSpan === nil)
     }
     #endif
+    
+    func testContextPropagationTwoSequentialChildSpans() {
+        let parentSpan = defaultTracer.spanBuilder(spanName: "Parent").setActive(true).startSpan()
+        OpenTelemetry.instance.contextProvider.setActiveSpan(parentSpan)
+        
+        let child1 = defaultTracer.spanBuilder(spanName: "child1").startSpan()
+        child1.end()
+        
+        let child2 = defaultTracer.spanBuilder(spanName: "child2").startSpan()
+        child2.end()
+        
+        parentSpan.end()
+        
+        XCTAssertEqual(parentSpan.context.traceId, child1.context.traceId)
+        XCTAssertEqual(parentSpan.context.traceId, child2.context.traceId)
+    }
 }
